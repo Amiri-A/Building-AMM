@@ -58,22 +58,26 @@ contract AMM is AccessControl{
 
 		//YOUR CODE HERE 
 		qtyA = ERC20(tokenA).balanceOf(address(this));
-    qtyB = ERC20(tokenB).balanceOf(address(this));
+        qtyB = ERC20(tokenB).balanceOf(address(this));
 
-    uint256 fee = (sellAmount * feebps) / 10000; // Fee in basis points
-    uint256 adjustedSellAmount = sellAmount - fee; // Adjusted sell amount after fee
+        uint256 fee = (sellAmount * feebps) / 10000; 
+        uint256 adjustedSellAmount = sellAmount - fee; 
 
-    if (sellToken == tokenA) {
-        swapAmt = (adjustedSellAmount * qtyB) / (qtyA + adjustedSellAmount);
-    } else {
-        swapAmt = (adjustedSellAmount * qtyA) / (qtyB + adjustedSellAmount);
-    }
+        if (sellToken == tokenA) {
+            swapAmt = (adjustedSellAmount * qtyB) / (qtyA + adjustedSellAmount);
+            ERC20(tokenA).transferFrom(msg.sender, address(this), sellAmount); 
+            ERC20(tokenB).transfer(msg.sender, swapAmt); 
+        } else {
+            swapAmt = (adjustedSellAmount * qtyA) / (qtyB + adjustedSellAmount);
+            ERC20(tokenB).transferFrom(msg.sender, address(this), sellAmount); 
+            ERC20(tokenA).transfer(msg.sender, swapAmt); 
+        }
 
-    uint256 new_invariant = ERC20(tokenA).balanceOf(address(this)) * ERC20(tokenB).balanceOf(address(this));
-    require(new_invariant >= invariant, 'Bad trade');
-    invariant = new_invariant;
+        uint256 new_invariant = ERC20(tokenA).balanceOf(address(this)) * ERC20(tokenB).balanceOf(address(this));
+        require(new_invariant >= invariant, 'Bad trade');
+        invariant = new_invariant;
 
-    emit Swap(sellToken, sellToken == tokenA ? tokenB : tokenA, sellAmount, swapAmt);
+        emit Swap(sellToken, sellToken == tokenA ? tokenB : tokenA, sellAmount, swapAmt);
 	}
 
 	/*
@@ -84,12 +88,12 @@ contract AMM is AccessControl{
 		//YOUR CODE HERE
 		emit LiquidityProvision( msg.sender, amtA, amtB ); //given in starter code
 		if (amtA > 0) {
-        ERC20(tokenA).transferFrom(msg.sender, address(this), amtA);
-    }
-    if (amtB > 0) {
-        ERC20(tokenB).transferFrom(msg.sender, address(this), amtB);
-    }
-    emit LiquidityProvision(msg.sender, amtA, amtB);
+            ERC20(tokenA).transferFrom(msg.sender, address(this), amtA);
+        }
+        if (amtB > 0) {
+            ERC20(tokenB).transferFrom(msg.sender, address(this), amtB);
+        }
+        invariant = ERC20(tokenA).balanceOf(address(this)) * ERC20(tokenB).balanceOf(address(this));
 	}
 
 	/*
